@@ -14,20 +14,25 @@ const minPrice = args[1];
 checkPrice();
 
 async function checkPrice() {
-  const priceString = await nightmare
-    .goto(url)
-    .wait("#price_inside_buybox")
-    .evaluate(() => document.getElementById("price_inside_buybox").innerText)
-    .end();
+  try {
+    const priceString = await nightmare
+      .goto(url)
+      .wait("#price_inside_buybox")
+      .evaluate(() => document.getElementById("price_inside_buybox").innerText)
+      .end();
 
-  const priceNumber = parseFloat(priceString.replace("$", ""));
+    const priceNumber = parseFloat(priceString.replace("$", ""));
 
-  if (priceNumber < minPrice) {
-      console.log("Price is low")
-    sendEmail(
-      "Price Is Low",
-      `The price on ${url} has dropped below ${minPrice}`
-    );
+    if (priceNumber < minPrice) {
+      console.log("Price is low");
+      sendEmail(
+        "Price Is Low",
+        `The price on ${url} has dropped below ${minPrice}`
+      );
+    }
+  } catch (error) {
+      sendEmail('Amazon Price Checker Error', error.message)
+      throw error
   }
 }
 
@@ -40,5 +45,14 @@ function sendEmail(subject, body) {
     html: body,
   };
 
-  return sgMail.send(email);
+  return sgMail.send(email).then(
+    () => {},
+    (error) => {
+      console.error(error);
+
+      if (error.response) {
+        console.error(error.response.body);
+      }
+    }
+  );
 }
